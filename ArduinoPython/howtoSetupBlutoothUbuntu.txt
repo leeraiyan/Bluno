@@ -1,4 +1,0 @@
-1. disable the normal bluetooth on laptop
-2. plug in the adapter and watch as the bluetooth is not enabled on the windows drivers
-3. make sure that unkowwn device and intel thingy is filtered in the USB under settings of VM
-4. turn on VM
