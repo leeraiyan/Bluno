@@ -1,0 +1,25 @@
+#Player 1 or 2
+player: 1
+
+#wristband bluno MAC address(lowercase)
+wristband: "50:f1:4a:da:c8:35"
+
+#gun bluno MAC address(lowercase)
+gun: "30:e2:83:86:66:2b"
+
+#vest bluno MAC address (lowercase)
+vest: "30:e2:83:86:6a:98"
+
+#this machine's MAC (lowercase)
+thisMachine: "70:cf:49:4f:51:7c"
+
+#number of blunos you are using for testing
+no_of_blunos: 3
+
+#do crc check at every wristbandBluno packet? (1 or 0)
+crc: 1
+
+#debug level ( zero to two)
+debug: 0
+
+

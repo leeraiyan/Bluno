@@ -9,6 +9,7 @@ import datetime
 import yaml
 
 SERIAL_SERVICE = "0000dfb0-0000-1000-8000-00805f9b34fb"
+isCRC = 0
 BLUNODICT = {}
 BLUNO_ID_to_ADDR = {}
 THIS_MACHINE_MAC = ""
@@ -88,54 +89,130 @@ class MyDelegate(btle.DefaultDelegate):
                 BLUNODICT[self.bluno.address]["buffer"] += data
                 BLUNODICT[self.bluno.address]["bufferLength"] = len(BLUNODICT[self.bluno.address]["buffer"])
 
-                if BLUNODICT[self.bluno.address]["bufferLength"] == 12:
-                    packet = struct.unpack('<hhhhhh', BLUNODICT[self.bluno.address]["buffer"])
-                    print(BLUNODICT[self.bluno.address]["name"], "says acc_x, acc_y, acc_z, yaw, pitch, roll:",
-                          packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
+                if BLUNODICT[self.bluno.address]["bufferLength"] == 16:
 
-                    BLUNODICT[self.bluno.address]["buffer"] = b''
-                    BLUNODICT[self.bluno.address]["bufferLength"] = 0
-                    BLUNODICT[self.bluno.address]["dataComplete"] = 1
-                    BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
-                    if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
-                        self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
+
+                    #if crc is off, we just unpack the data and ignore the checksum
+                    if isCRC == 0:
+                        packet = struct.unpack('<hhhhhhL', BLUNODICT[self.bluno.address]["buffer"])
+                        print(BLUNODICT[self.bluno.address]["name"], "says acc_x, acc_y, acc_z, yaw, pitch, roll:",
+                              packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
+
+                        BLUNODICT[self.bluno.address]["buffer"] = b''
+                        BLUNODICT[self.bluno.address]["bufferLength"] = 0
+                        BLUNODICT[self.bluno.address]["dataComplete"] = 1
+                        BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+
+                        # write to the Bluno to say all is good
+                        if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
+                            self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
+
+                    #if crc is on, we must check the data against the checksum
+                    else:
+                        prePacket = struct.unpack('<HHHHHHL', BLUNODICT[self.bluno.address]["buffer"])
+                        checkSum = get_fletcher32([prePacket[0], prePacket[1], prePacket[2], prePacket[3], prePacket[4], prePacket[5]])
+
+                        #check against the checksum that the bluno sent
+                        if checkSum == prePacket[6]:
+                            packet = struct.unpack('<hhhhhhL', BLUNODICT[self.bluno.address]["buffer"])
+                            print(BLUNODICT[self.bluno.address]["name"], "says acc_x, acc_y, acc_z, yaw, pitch, roll:",
+                                  packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
+
+                            BLUNODICT[self.bluno.address]["buffer"] = b''
+                            BLUNODICT[self.bluno.address]["bufferLength"] = 0
+                            BLUNODICT[self.bluno.address]["dataComplete"] = 1
+                            BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+
+                            # write to the Bluno to say all is good
+                            if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
+                                self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
+
+                        #checksum turns out to be wrong, drop the packet
+                        else:
+                            print("checksum is wrong, dropping packet")
+                            BLUNODICT[self.bluno.address]["buffer"] = b''
+                            BLUNODICT[self.bluno.address]["bufferLength"] = 0
+
                     # print("transmitted Packets:", BLUNODICT[self.bluno.address]["transmittedPackets"])
 
-                elif BLUNODICT[self.bluno.address]["bufferLength"] > 12:
-                    dataToUnpack = BLUNODICT[self.bluno.address]["buffer"][0:12]
-                    BLUNODICT[self.bluno.address]["buffer"] = BLUNODICT[self.bluno.address]["buffer"][12:]
-                    BLUNODICT[self.bluno.address]["bufferLength"] = len(BLUNODICT[self.bluno.address]["buffer"])
+                elif BLUNODICT[self.bluno.address]["bufferLength"] > 16:
 
-                    packet = struct.unpack('<hhhhhh', dataToUnpack)
-                    # print("Trying to recreate data:", int.from_bytes(data, byteorder='little', signed=True))
-                    print(BLUNODICT[self.bluno.address]["name"], "says acc_x, acc_y, acc_z, yaw, pitch, roll:",
-                          packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
+                    #if crc is off, we just unpack the data and ignore the checksum
+                    if isCRC == 0:
+                        dataToUnpack = BLUNODICT[self.bluno.address]["buffer"][0:16]
+                        BLUNODICT[self.bluno.address]["buffer"] = BLUNODICT[self.bluno.address]["buffer"][16:]
+                        BLUNODICT[self.bluno.address]["bufferLength"] = len(BLUNODICT[self.bluno.address]["buffer"])
+
+                        packet = struct.unpack('<hhhhhhL', dataToUnpack)
+                        # print("Trying to recreate data:", int.from_bytes(data, byteorder='little', signed=True))
+                        print(BLUNODICT[self.bluno.address]["name"], "says acc_x, acc_y, acc_z, yaw, pitch, roll:",
+                              packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
 
 
-                    BLUNODICT[self.bluno.address]["dataComplete"] = 1
-                    BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
-                    if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
-                        self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
-                    # print("transmitted Packets:", BLUNODICT[self.bluno.address]["transmittedPackets"])
+                        BLUNODICT[self.bluno.address]["dataComplete"] = 1
+                        BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+
+                        #write to the Bluno to say all is good
+                        if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
+                            self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
+                        # print("transmitted Packets:", BLUNODICT[self.bluno.address]["transmittedPackets"])
+
+                    #crc is on and we need to check against the checksum,lame
+                    else:
+                        dataToUnpack = BLUNODICT[self.bluno.address]["buffer"][0:16]
+                        BLUNODICT[self.bluno.address]["buffer"] = BLUNODICT[self.bluno.address]["buffer"][16:]
+                        BLUNODICT[self.bluno.address]["bufferLength"] = len(BLUNODICT[self.bluno.address]["buffer"])
+
+                        prePacket = struct.unpack('<HHHHHHL', dataToUnpack)
+                        checkSum = get_fletcher32([prePacket[0], prePacket[1], prePacket[2], prePacket[3], prePacket[4], prePacket[5]])
+
+
+                        #if the calculated checksum is equal to the one sent by bluno, accept and unpack the packet as data
+                        if checkSum == prePacket[6]:
+                            packet = struct.unpack('<hhhhhhL', dataToUnpack)
+                            # print("Trying to recreate data:", int.from_bytes(data, byteorder='little', signed=True))
+                            print(BLUNODICT[self.bluno.address]["name"],
+                                  "says acc_x, acc_y, acc_z, yaw, pitch, roll",
+                                  packet[0], packet[1], packet[2], packet[3], packet[4], packet[5])
+
+                            BLUNODICT[self.bluno.address]["dataComplete"] = 1
+                            BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+                            #write to the Bluno to say all is good
+                            if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
+                                self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
+
+
+                        #if checksum is not equal, discard everything
+                        else:
+                            print("checksum is wrong, clearing buffer")
+                            BLUNODICT[self.bluno.address]["buffer"] = b''
+                            BLUNODICT[self.bluno.address]["bufferLength"] = 0
+
 
             except Exception as e:
                 logging.error("The data fragments are weird")
                 print(data)
 
-        # this is how we handle data from the gunBluno or the vestBluno
+        # this is how we handle data from the gunBluno
         elif data != b'A' and BLUNODICT[self.bluno.address]["id"] == 1:
             if data == b'\xff':
                 print(BLUNODICT[self.bluno.address]["name"], "says Gunshot!")
             BLUNODICT[self.bluno.address]["dataComplete"] = 1
             BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+
+            # write to the Bluno to say all is good
             if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
                 self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
 
+
+        # this is how we handle data from the vestBluno
         elif data != b'A' and BLUNODICT[self.bluno.address]["id"] == 2:
             if data == b'\xff':
                 print(BLUNODICT[self.bluno.address]["name"], "says I've been hit!")
             BLUNODICT[self.bluno.address]["dataComplete"] = 1
             BLUNODICT[self.bluno.address]["transmittedPackets"] += 1
+
+            # write to the Bluno to say all is good
             if BLUNODICT[self.bluno.address]["transmittedPackets"] % 100:
                 self.serialCharacteristic.write("G".encode("utf-8"), withResponse=False)
 
@@ -148,7 +225,18 @@ class ScanDelegate(DefaultDelegate):
             BLUNODICT[dev.addr]["discovered"] = 1
             print(dev.addr, "(", BLUNODICT[dev.addr]["name"] ,") has been discovered")
 
-
+def get_fletcher32(data) -> int:
+    """
+    Accepts bytes as input.
+    Returns the Fletcher32 checksum value in decimal and hexadecimal format.
+    16-bit implementation (32-bit checksum)
+    """
+    sum1, sum2 = int(), int()
+    for index in range(len(data)):
+        sum1 = (sum1 + data[index]) % 65535
+        sum2 = (sum2 + sum1) % 65535
+    result = (sum2 << 16) | sum1
+    return result
 
 
 def checkBlunoAdvertisement():
@@ -294,7 +382,8 @@ def setVariables():
     with open('config.yaml') as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
         print(data)
-
+    global isCRC
+    isCRC = data["crc"]
     global THIS_MACHINE_MAC
     THIS_MACHINE_MAC = data["thisMachine"]
     BLUNO_ID_to_ADDR[0] = data["wristband"]
@@ -319,6 +408,11 @@ def setVariables():
 setVariables()
 
 print("Client Side Starting, scanning for Blunos", list(BLUNODICT.keys()))
+
+#double check global variables
+print("CRC is ", isCRC)
+print("No of Blunos is", NO_OF_BLUNOS)
+
 #Ensure all devices are advertising before moving on to handshake
 #Create list of Bluno objects
 blunoList = []
