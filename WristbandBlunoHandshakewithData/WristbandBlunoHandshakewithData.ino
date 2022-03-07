@@ -18,7 +18,7 @@ struct DataPacket
   long yaw;
   long pitch;
   long roll;
-  
+  uint32_t crc;
 };
 
 
@@ -30,9 +30,23 @@ struct IntDataPacket
   int yaw;
   int pitch;
   int roll;
+  uint32_t crc;
   
 };
 
+uint32_t checksumCalculator(uint16_t * data, uint32_t length)
+{
+   uint32_t curr_crc = 0x00000000;
+   uint32_t sum1 =  curr_crc;
+   uint32_t sum2 = (curr_crc >> 16);
+   int index;
+   for(index = 0; index < length; index = index+1)
+   {
+      sum1 = (sum1 + data[index]) % 65535;
+      sum2 = (sum2 + sum1) % 65535;
+   }
+   return (sum2 << 16) | sum1;
+}
 
 IntDataPacket TxPacket;
 
@@ -134,6 +148,9 @@ void TaskPrepare(void *pvParameters)  // This is a task.
     TxPacket.yaw = dummyIMUDataInt();
     TxPacket.pitch = dummyIMUDataInt();
     TxPacket.roll = dummyIMUDataInt();
+    uint16_t buf[6] = {TxPacket.acc_x, TxPacket.acc_y ,TxPacket.acc_z, TxPacket.yaw, TxPacket.pitch, TxPacket.roll};
+    uint32_t crc = checksumCalculator(buf, 6);
+    TxPacket.crc = crc;
     vTaskDelay( 50 / portTICK_PERIOD_MS ); 
   }
 }
