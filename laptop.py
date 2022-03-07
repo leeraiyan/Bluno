@@ -6,22 +6,13 @@ import time
 import struct
 import threading
 import datetime
+import yaml
 
 SERIAL_SERVICE = "0000dfb0-0000-1000-8000-00805f9b34fb"
-# BLUNODICT = {"50:f1:4a:da:c8:35": {"id": 0, "name": "P1WristbandBluno", "discovered": 0, "acknowledged": 0, "buffer": b'', "bufferLength": 0, "dataComplete": 0}}
-
-BLUNODICT = {"50:f1:4a:da:c8:35": {"id": 0, "name": "P1WristbandBluno", "discovered": 0, "acknowledged": 0,
-                                   "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0},
-             "30:e2:83:86:66:2b": {"id": 1, "name": "P1GunBluno", "discovered": 0, "acknowledged": 0,
-                                   "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0},
-             "30:e2:83:86:6a:98": {"id": 2, "name": "P1VestBluno", "discovered": 0, "acknowledged": 0,
-                                   "buffer": b'',"bufferLength": 0, "dataComplete": 0,  "transmittedPackets": 0}}
-
-# BLUNODICT = {"30:e2:83:86:66:2b": {"id": 1, "name": "P1GunBluno", "discovered": 0, "acknowledged": 0, "buffer": b'', "bufferLength": 0}}
-
-BLUNO_ID_to_ADDR = {0: "50:f1:4a:da:c8:35", 1: "30:e2:83:86:66:2b", 2:"30:e2:83:86:6a:98"}
-THIS_MACHINE_MAC = "70:CF:49:4F:51:7C"
-NO_OF_BLUNOS = 3
+BLUNODICT = {}
+BLUNO_ID_to_ADDR = {}
+THIS_MACHINE_MAC = ""
+NO_OF_BLUNOS = 1000
 resetFlag = 0
 
 #this flag sends a reset command to the Blunos when this client program first boots
@@ -299,6 +290,33 @@ def beginCommunication(blunoList):
         #         connection.disconnect
         beginCommunication(blunoList)
 
+def setVariables():
+    with open('config.yaml') as f:
+        data = yaml.load(f, Loader=yaml.FullLoader)
+        print(data)
+
+    global THIS_MACHINE_MAC
+    THIS_MACHINE_MAC = data["thisMachine"]
+    BLUNO_ID_to_ADDR[0] = data["wristband"]
+    BLUNO_ID_to_ADDR[1] = data["gun"]
+    BLUNO_ID_to_ADDR[2] = data["vest"]
+    global NO_OF_BLUNOS
+    NO_OF_BLUNOS = data["no_of_blunos"]
+    wristbandName = "P" + str(data["player"]) + "WristbandBluno"
+    BLUNODICT[data["wristband"]] = {"id": 0, "name": wristbandName, "discovered": 0, "acknowledged": 0,
+                                   "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+    gunName = "P" + str(data["player"]) + "GunBluno"
+    BLUNODICT[data["gun"]] = {"id": 1, "name": gunName, "discovered": 0, "acknowledged": 0,
+                                    "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+    vestName = "P" + str(data["player"]) + "VestBluno"
+    BLUNODICT[data["vest"]] = {"id": 2, "name": vestName, "discovered": 0, "acknowledged": 0,
+                                   "buffer": b'',"bufferLength": 0, "dataComplete": 0,  "transmittedPackets": 0}
+
+    return 0
+
+
+#set variables based on config file
+setVariables()
 
 print("Client Side Starting, scanning for Blunos", list(BLUNODICT.keys()))
 #Ensure all devices are advertising before moving on to handshake
