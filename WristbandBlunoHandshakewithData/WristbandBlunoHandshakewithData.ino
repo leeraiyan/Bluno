@@ -101,7 +101,7 @@ void TaskSend(void *pvParameters)  // This is a task.
     if(Serial.available() > 0 ){
       byte cmd = Serial.read();
       switch(char(cmd)){
-        case 'H':
+        case 'S':
           Serial.write('A');
           handshake_completed = false;
           break;

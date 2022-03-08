@@ -10,7 +10,7 @@ struct DataPacket
 
 DataPacket TxPacket;
 
-// define two tasks for Blink & AnalogRead
+// define two tasks for Serial Comms & Preparing Packet
 void TaskSend( void *pvParameters );
 void TaskPrepare( void *pvParameters );
 
@@ -44,7 +44,7 @@ void loop() {
 //  if(Serial.available() > 0 ){
 //    byte cmd = Serial.read();
 //    switch(char(cmd)){
-//      case 'H':
+//      case :
 //        Serial.write('A');
 //        handshake_completed = false;
 //        break;
@@ -82,7 +82,7 @@ void TaskSend(void *pvParameters)  // This is a task.
     if(Serial.available() > 0 ){
       byte cmd = Serial.read();
       switch(char(cmd)){
-        case 'H':
+        case 'S':
           Serial.write('A');
           handshake_completed = false;
           break;

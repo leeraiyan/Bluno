@@ -259,7 +259,7 @@ def handshakeBluno(bluno, peri, serialCharacteristic):
             print("Client has just booted, so reset the Bluno")
             serialCharacteristic.write("R".encode("utf-8"), withResponse=False)
         else:
-            serialCharacteristic.write("H".encode("utf-8"), withResponse = False)
+            serialCharacteristic.write("S".encode("utf-8"), withResponse = False)
 
         if peri.waitForNotifications(1) and BLUNODICT[bluno.address]["acknowledged"]:
             serialCharacteristic.write("A".encode("utf-8"), withResponse=False)
