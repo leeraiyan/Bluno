@@ -8,7 +8,7 @@ wristband: "30:e2:83:86:66:2b"
 gun: "50:f1:4a:da:d0:8d"
 
 #vest bluno MAC address (lowercase)
-vest: "30:e2:83:86:66:04"
+vest: "30:e2:83:86:6a:98"
 
 #this machine's MAC (lowercase)
 thisMachine: "70:cf:49:4f:51:7c"
