@@ -2,13 +2,13 @@
 player: 1
 
 #wristband bluno MAC address(lowercase)
-wristband: "30:e2:83:86:66:2b"
+wristband: "30:e2:83:86:6a:98"
 
 #gun bluno MAC address(lowercase)
-gun: "50:f1:4a:da:d0:8d"
+gun: "50:f1:4a:da:c8:35"
 
 #vest bluno MAC address (lowercase)
-vest: "30:e2:83:86:6a:98"
+vest: "30:e2:83:86:66:04"
 
 #this machine's MAC (lowercase)
 thisMachine: "70:cf:49:4f:51:7c"
