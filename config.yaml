@@ -1,14 +1,20 @@
-#Player 1 or 2
+#which week mode (11 is the mode where you have player 1 wristband and target, but player 2 gun)
+week: 11
+
+#if week 13, specify is this computer running player 1 or 2 hardware
 player: 1
 
-#wristband bluno MAC address(lowercase)
-wristband: "30:e2:83:86:6a:98"
+#P1 wristband bluno MAC address(lowercase)
+wristband: "30:e2:83:ae:57:3c"
 
-#gun bluno MAC address(lowercase)
+
+#P1 gun bluno MAC address(lowercase)
 gun: "50:f1:4a:da:c8:35"
 
-#vest bluno MAC address (lowercase)
+
+#P1 vest bluno MAC address (lowercase)
 vest: "30:e2:83:86:66:04"
+
 
 #this machine's MAC (lowercase)
 thisMachine: "70:cf:49:4f:51:7c"

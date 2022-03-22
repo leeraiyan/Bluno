@@ -329,7 +329,17 @@ def beginCommunication(blunoList):
         if len(connections) != len(blunoList):
             raise Exception("Not enough handshakes to continue")
         begin_time = datetime.datetime.now()
+
+
+        # toStart = "N"
+        # while(toStart != "Y"):
+        #     toStart = input("All Handshakes Complete, Start Getting Data? ")
+        #     if toStart:
+        for i in range(len(blunoList)):
+            serialCharacteristics[i].write("D".encode("utf-8"), withResponse=False)
+
         print("Begin Getting Data")
+
         #we do like a round robin for the connections, we write a D to the bluno and wait for a complete packet to return
         while(True):
             for i in range(len(blunoList)):
@@ -383,24 +393,47 @@ def setVariables():
         data = yaml.load(f, Loader=yaml.FullLoader)
         print(data)
     global isCRC
-    isCRC = data["crc"]
     global THIS_MACHINE_MAC
-    THIS_MACHINE_MAC = data["thisMachine"]
-    BLUNO_ID_to_ADDR[0] = data["wristband"]
-    BLUNO_ID_to_ADDR[1] = data["gun"]
-    BLUNO_ID_to_ADDR[2] = data["vest"]
     global NO_OF_BLUNOS
-    NO_OF_BLUNOS = data["no_of_blunos"]
-    wristbandName = "P" + str(data["player"]) + "WristbandBluno"
-    BLUNODICT[data["wristband"]] = {"id": 0, "name": wristbandName, "discovered": 0, "acknowledged": 0,
-                                   "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
-    gunName = "P" + str(data["player"]) + "GunBluno"
-    BLUNODICT[data["gun"]] = {"id": 1, "name": gunName, "discovered": 0, "acknowledged": 0,
-                                    "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
-    vestName = "P" + str(data["player"]) + "VestBluno"
-    BLUNODICT[data["vest"]] = {"id": 2, "name": vestName, "discovered": 0, "acknowledged": 0,
-                                   "buffer": b'',"bufferLength": 0, "dataComplete": 0,  "transmittedPackets": 0}
 
+    if data["week"] == 13:
+
+        isCRC = data["crc"]
+
+        THIS_MACHINE_MAC = data["thisMachine"]
+        BLUNO_ID_to_ADDR[0] = data["wristband"]
+        BLUNO_ID_to_ADDR[1] = data["gun"]
+        BLUNO_ID_to_ADDR[2] = data["vest"]
+
+        NO_OF_BLUNOS = data["no_of_blunos"]
+        wristbandName = "P" + str(data["player"]) + "WristbandBluno"
+        BLUNODICT[data["wristband"]] = {"id": 0, "name": wristbandName, "discovered": 0, "acknowledged": 0,
+                                       "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+        gunName = "P" + str(data["player"]) + "GunBluno"
+        BLUNODICT[data["gun"]] = {"id": 1, "name": gunName, "discovered": 0, "acknowledged": 0,
+                                        "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+        vestName = "P" + str(data["player"]) + "VestBluno"
+        BLUNODICT[data["vest"]] = {"id": 2, "name": vestName, "discovered": 0, "acknowledged": 0,
+                                       "buffer": b'',"bufferLength": 0, "dataComplete": 0,  "transmittedPackets": 0}
+    elif data["week"] == 11:
+
+        isCRC = data["crc"]
+
+        THIS_MACHINE_MAC = data["thisMachine"]
+        BLUNO_ID_to_ADDR[0] = data["wristband"]
+        BLUNO_ID_to_ADDR[1] = data["gun"]
+        BLUNO_ID_to_ADDR[2] = data["vest"]
+
+        NO_OF_BLUNOS = data["no_of_blunos"]
+        wristbandName = "P" + str(data["player"]) + "WristbandBluno"
+        BLUNODICT[data["wristband"]] = {"id": 0, "name": wristbandName, "discovered": 0, "acknowledged": 0,
+                                       "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+        gunName = "P" + str(2) + "GunBluno"
+        BLUNODICT[data["gun"]] = {"id": 1, "name": gunName, "discovered": 0, "acknowledged": 0,
+                                        "buffer": b'', "bufferLength": 0, "dataComplete": 0, "transmittedPackets": 0}
+        vestName = "P" + str(data["player"]) + "VestBluno"
+        BLUNODICT[data["vest"]] = {"id": 2, "name": vestName, "discovered": 0, "acknowledged": 0,
+                                       "buffer": b'',"bufferLength": 0, "dataComplete": 0,  "transmittedPackets": 0}
     return 0
 
 
