@@ -1,6 +1,17 @@
 #include <Arduino_FreeRTOS.h>
 
+//HARDWARE CODE----------------
+#include <MPU6050.h>
+#include "Wire.h"
+
+MPU6050 imu;
+int16_t ax, ay, az;
+int16_t gx, gy, gz;
+//HARDWARE CODE----------------
+
+
 bool handshake_completed;
+bool dataCommand;
 long randNumber;
 long minIMUdummyValue = -3600000;
 long maxIMUdummyValue = 3600000;
@@ -65,13 +76,14 @@ void setup() {
   // Now set up two tasks to run independently.
   xTaskCreate(TaskSend, "Task1", 128, NULL, 1, &TaskHandle_1);
   xTaskCreate(TaskPrepare, "Task2", 128, NULL, 2, &TaskHandle_2);
-  
-//  TxPacket.acc_x = dummyIMUDataInt();
-//  TxPacket.acc_y = dummyIMUDataInt();
-//  TxPacket.acc_z = dummyIMUDataInt();
-//  TxPacket.yaw = dummyIMUDataInt();
-//  TxPacket.pitch = dummyIMUDataInt();
-//  TxPacket.roll = dummyIMUDataInt();
+
+  //HARDWARE CODE----------------
+  pinMode(5, OUTPUT);
+  Wire.begin();
+  Serial.begin(115200);
+  imu.initialize();
+  Serial.println(imu.testConnection() ? "Connected" : "Error");
+  //HARDWARE CODE----------------
 }
 
 long dummyIMUData(){
@@ -97,21 +109,21 @@ void TaskSend(void *pvParameters)  // This is a task.
 
   for (;;) // A Task shall never return or exit.
   {
-    bool dataCommand = false;
+    
     if(Serial.available() > 0 ){
       byte cmd = Serial.read();
       switch(char(cmd)){
         case 'S':
           Serial.write('A');
           handshake_completed = false;
+          dataCommand = false;
           break;
         case 'A':
-          delay(5000);
           handshake_completed = true;
-          beginTime = millis();
           break;
         case 'D':
           dataCommand = true;
+          beginTime = millis();
           break;
         case 'R':
           resetFunc();
@@ -122,9 +134,8 @@ void TaskSend(void *pvParameters)  // This is a task.
         }
   
       }
-      if(handshake_completed){
+      if(handshake_completed && dataCommand){
         Serial.write((uint8_t*) &TxPacket, sizeof(TxPacket));
-        dataCommand = false;
         long timeSinceLastReply = millis() - beginTime;
         if (timeSinceLastReply < 6000)
           vTaskDelay( 50 / portTICK_PERIOD_MS );
@@ -142,12 +153,13 @@ void TaskPrepare(void *pvParameters)  // This is a task.
 
   for (;;)
   {
-    TxPacket.acc_x = dummyIMUDataInt();
-    TxPacket.acc_y = dummyIMUDataInt();
-    TxPacket.acc_z = dummyIMUDataInt();
-    TxPacket.yaw = dummyIMUDataInt();
-    TxPacket.pitch = dummyIMUDataInt();
-    TxPacket.roll = dummyIMUDataInt();
+    imu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    TxPacket.acc_x = ax;
+    TxPacket.acc_y = ay;
+    TxPacket.acc_z = az;
+    TxPacket.yaw = gx;
+    TxPacket.pitch = gy;
+    TxPacket.roll = gz;
     uint16_t buf[6] = {TxPacket.acc_x, TxPacket.acc_y ,TxPacket.acc_z, TxPacket.yaw, TxPacket.pitch, TxPacket.roll};
     uint32_t crc = checksumCalculator(buf, 6);
     TxPacket.crc = crc;

@@ -1,5 +1,6 @@
 #include <Arduino_FreeRTOS.h>
 bool handshake_completed;
+bool dataCommand;
 int randNumber;
 long beginTime;
 
@@ -39,35 +40,6 @@ char dummyVestData(){
 void(* resetFunc) (void) = 0;
 
 void loop() {
-//  bool dataCommand = false;
-//  if(Serial.available() > 0 ){
-//    byte cmd = Serial.read();
-//    switch(char(cmd)){
-//      case 'H':
-//        Serial.write('A');
-//        handshake_completed = false;
-//        break;
-//      case 'A':
-//        delay(3000);
-//        handshake_completed = true;
-//        break;
-//      case 'D':
-//        dataCommand = true;
-//        break;
-//      case 'R':
-//        resetFunc();
-//        break;
-//      }
-//
-//    }
-//    if(handshake_completed){
-//      
-//      TxPacket.hit = dummyVestData();
-//      Serial.write((uint8_t*) &TxPacket, sizeof(TxPacket));
-//      dataCommand = false;
-//      delay(50);
-//
-//    }
 }
 
 
@@ -77,21 +49,21 @@ void TaskSend(void *pvParameters)  // This is a task.
 
   for (;;) // A Task shall never return or exit.
   {
-    bool dataCommand = false;
+    
     if(Serial.available() > 0 ){
       byte cmd = Serial.read();
       switch(char(cmd)){
         case 'S':
           Serial.write('A');
           handshake_completed = false;
-          beginTime = millis();
+          dataCommand = false;
           break;
         case 'A':
-          delay(5000);
           handshake_completed = true;
           break;
         case 'D':
           dataCommand = true;
+          beginTime = millis();
           break;
         case 'R':
           resetFunc();
@@ -102,9 +74,8 @@ void TaskSend(void *pvParameters)  // This is a task.
         }
   
       }
-      if(handshake_completed){
+      if(handshake_completed && dataCommand){
         Serial.write((uint8_t*) &TxPacket, sizeof(TxPacket));
-        dataCommand = false;
         long timeSinceLastReply = millis() - beginTime;
         if (timeSinceLastReply < 6000)
           vTaskDelay( 50 / portTICK_PERIOD_MS );
